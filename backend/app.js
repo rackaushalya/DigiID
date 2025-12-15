@@ -25,6 +25,7 @@ app.use(express.static(path.join(__dirname, "../")));
 
 // =====================
 // MongoDB Connection
+
 // =====================
 // Example: mongodb://127.0.0.1:27017
 const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017";
