@@ -28,20 +28,19 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
 
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="index.html"><i class="bi bi-house-door"></i> Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="manage-citizens.html"><i class="bi bi-people-fill"></i> Manage
-                            Citizens</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="search.html"><i class="bi bi-search"></i> Search</a>
-                    </li>
-                </ul>
-            </div>
+                    <div class="collapse navbar-collapse" id="navbarNav">
+                        <ul class="navbar-nav ms-auto">
+                            <li class="nav-item">
+                                <a class="nav-link" href="index.html"><i class="bi bi-house-door"></i> Home</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="manage-citizens.html"><i class="bi bi-people-fill"></i> Manage Citizens</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link active" aria-current="page" href="search.html"><i class="bi bi-search"></i> Search</a>
+                            </li>
+                        </ul>
+                    </div>
         </div>
     </nav>
 
@@ -140,31 +139,20 @@
     <script>
         const API_BASE = "http://localhost:3000";
 
-        // ==========================
-        // DOB helpers
-        // ==========================
         function normalizeDob(input) {
-            const v = (input || "").trim();
+            let v = (input || "").trim();
+            if (!v) return "";
+            v = v.replace(/[./]/g, "-");
 
-            // If user picked a browser date value: YYYY-MM-DD -> DD-MM-YYYY
+            // YYYY-MM-DD -> DD-MM-YYYY
             if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
                 const [y, m, d] = v.split("-");
                 return `${d}-${m}-${y}`;
             }
-
-            // Already DD-MM-YYYY
-            if (/^\d{2}-\d{2}-\d{4}$/.test(v)) return v;
-
-            return v; // leave as-is
+            return v; // keep DD-MM-YYYY as-is
         }
 
-        function includesSafe(hay, needle) {
-            return String(hay || "").toLowerCase().includes(String(needle || "").toLowerCase());
-        }
-
-        // ==========================
-        // UI: input type per field
-        // ==========================
+        // Toggle input type based on selected field
         function setInputForField(field) {
             const wrap = document.getElementById("textInputWrap");
             wrap.innerHTML = "";
@@ -173,13 +161,13 @@
             label.className = "form-label small mb-1";
             label.innerText = "Query";
 
-            // ✅ Make DoB a normal text field (not date picker)
+            // ✅ DoB is a normal text field
             if (field === "dob") {
                 const input = document.createElement("input");
                 input.type = "text";
                 input.id = "searchInput";
                 input.className = "form-control";
-                input.placeholder = "DD-MM-YYYY (e.g., 20-11-2000) or YYYY-MM-DD";
+                input.placeholder = "DD-MM-YYYY (20-11-2000) or YYYY-MM-DD";
                 wrap.appendChild(label);
                 wrap.appendChild(input);
                 return;
@@ -217,9 +205,6 @@
             wrap.appendChild(input);
         }
 
-        // ==========================
-        // render results
-        // ==========================
         function renderRows(list) {
             const body = document.getElementById("resultsBody");
             const count = document.getElementById("resultCount");
@@ -261,68 +246,49 @@
             count.innerText = `${list.length} result${list.length === 1 ? "" : "s"}`;
         }
 
-        // ==========================
-        // Search actions
-        // ==========================
         function searchNow() {
             const field = document.getElementById("searchField").value;
-            const rawValue = ((document.getElementById("searchInput") || {}).value || "").trim();
+            const rawValue = (document.getElementById("searchInput") || {}).value || "";
+            const value = rawValue.trim();
 
-            const body = document.getElementById("resultsBody");
-            const count = document.getElementById("resultCount");
+            if (!value) return renderRows([]);
 
-            body.innerHTML = "";
-            count.innerText = "0 results";
-
-            if (!rawValue) {
-                body.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Please enter a search term.</td></tr>';
-                return;
-            }
-
-            // ✅ If searching by NDI: use POST /citizens/findOne (fast + exact)
+            // If searching by NDI: use POST /citizens/findOne
             if (field === "nic") {
                 $.ajax({
                     url: `${API_BASE}/citizens/findOne`,
                     method: "POST",
                     contentType: "application/json",
-                    data: JSON.stringify({ nic: rawValue }),
+                    data: JSON.stringify({ nic: value }),
                     success: function (res) {
-                        const citizen = res.data ? [res.data] : [];
-                        renderRows(citizen);
+                        renderRows(res.data ? [res.data] : []);
                     },
                     error: function () {
                         renderRows([]);
-                    },
+                    }
                 });
                 return;
             }
 
-            // ✅ Otherwise: get all and filter client-side
+            // Otherwise: fetch all, then filter on client side
             $.ajax({
                 url: `${API_BASE}/citizens`,
                 method: "GET",
                 success: function (res) {
                     const list = res.data || [];
-                    const q = field === "dob" ? normalizeDob(rawValue) : rawValue;
+                    const q = field === "dob" ? normalizeDob(value) : value.toLowerCase();
 
                     const filtered = list.filter((c) => {
-                        const val =
-                            field === "dob" ? normalizeDob(c.dob) :
-                                field === "firstName" ? c.firstName :
-                                    field === "lastName" ? c.lastName :
-                                        field === "email" ? c.email :
-                                            field === "phone" ? c.phone :
-                                                field === "occupation" ? c.occupation :
-                                                    "";
-
-                        return includesSafe(val, q);
+                        let v = c[field] || "";
+                        if (field === "dob") v = normalizeDob(v);
+                        return String(v).toLowerCase().includes(q);
                     });
 
                     renderRows(filtered);
                 },
                 error: function () {
                     renderRows([]);
-                },
+                }
             });
         }
 
