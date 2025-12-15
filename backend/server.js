@@ -18,7 +18,7 @@ app.use(express.json());
 app.use("/api", citizenRoutes);
 
 // Serve frontend (so links work + no CORS pain)
-app.use(express.static(path.join(__dirname, "../frontend")));
+app.use(express.static(path.join(__dirname, "../")));
 
 // Health check
 app.get("/health", (req, res) => res.json({ ok: true }));
