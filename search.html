@@ -16,7 +16,7 @@
 
 <body>
 
-    
+
     <!-- NAVBAR-->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
         <div class="container">
@@ -29,19 +29,21 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
 
-                    <div class="collapse navbar-collapse" id="navbarNav">
-                        <ul class="navbar-nav ms-auto">
-                            <li class="nav-item">
-                                <a class="nav-link" href="index.html"><i class="bi bi-house-door"></i> Home</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="manage-citizens.html"><i class="bi bi-people-fill"></i> Manage Citizens</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link active" aria-current="page" href="search.html"><i class="bi bi-search"></i> Search</a>
-                            </li>
-                        </ul>
-                    </div>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html"><i class="bi bi-house-door"></i> Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="manage-citizens.html"><i class="bi bi-people-fill"></i> Manage
+                            Citizens</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="search.html"><i class="bi bi-search"></i>
+                            Search</a>
+                    </li>
+                </ul>
+            </div>
         </div>
     </nav>
 
@@ -52,7 +54,7 @@
                 <div class="col-md-8">
                     <h1 class="fw-bold mb-1">Search Citizens</h1>
                     <p class="lead mb-0">Lookup citizen records by NDI, name, date of birth, email, phone or occupation.
-                         (no backend).</p>
+                        (no backend).</p>
                 </div>
                 <div class="col-md-4 text-md-end mt-3 mt-md-0">
                     <a href="manage-citizens.html" class="btn btn-primary"><i class="bi bi-people-fill"></i> Manage
@@ -75,7 +77,7 @@
                                 <option value="occupation">Occupation</option>
                             </select>
                         </div>
-                        
+
 
                         <div class="col-sm-5" id="textInputWrap">
                             <label class="form-label small mb-1">Query</label>
@@ -250,18 +252,27 @@
 
         function searchNow() {
             const field = document.getElementById("searchField").value;
-            const rawValue = (document.getElementById("searchInput") || {}).value || "";
-            const value = rawValue.trim();
+            const rawValue = ((document.getElementById("searchInput") || {}).value || "").trim();
 
-            if (!value) return renderRows([]);
+            // clear old results
+            document.getElementById("resultsBody").innerHTML = "";
+            document.getElementById("resultCount").innerText = "0 results";
 
-            // search citizen by NDI
+            if (!rawValue) {
+                document.getElementById("resultsBody").innerHTML =
+                    '<tr><td colspan="7" class="text-center text-muted">Please enter a search term.</td></tr>';
+                return;
+            }
+
+            // =========================
+            // 1) NDI ID (nic) -> POST /citizens/findOne (exact)
+            // =========================
             if (field === "nic") {
                 $.ajax({
                     url: `${API_BASE}/citizens/findOne`,
                     method: "POST",
                     contentType: "application/json",
-                    data: JSON.stringify({ nic: value }),
+                    data: JSON.stringify({ nic: rawValue }),
                     success: function (res) {
                         renderRows(res.data ? [res.data] : []);
                     },
@@ -272,26 +283,125 @@
                 return;
             }
 
-            // SHOW ALL
-            $.ajax({
-                url: `${API_BASE}/citizens`,
-                method: "GET",
-                success: function (res) {
-                    const list = res.data || [];
-                    const q = field === "dob" ? normalizeDob(value) : value.toLowerCase();
+            // =========================
+            // 2) Email -> GET /citizens?email= (server-side filter)
+            // =========================
+            if (field === "email") {
+                $.ajax({
+                    url: `${API_BASE}/citizens?email=${encodeURIComponent(rawValue)}`,
+                    method: "GET",
+                    success: function (res) {
+                        renderRows(res.data || []);
+                    },
+                    error: function () {
+                        renderRows([]);
+                    }
+                });
+                return;
+            }
 
-                    const filtered = list.filter((c) => {
-                        let v = c[field] || "";
-                        if (field === "dob") v = normalizeDob(v);
-                        return String(v).toLowerCase().includes(q);
-                    });
+            // =========================
+            // 3) First Name -> GET /citizens?name= then filter by firstName
+            // =========================
+            if (field === "firstName") {
+                $.ajax({
+                    url: `${API_BASE}/citizens?name=${encodeURIComponent(rawValue)}`,
+                    method: "GET",
+                    success: function (res) {
+                        const list = res.data || [];
+                        const q = rawValue.toLowerCase();
+                        const filtered = list.filter(c => String(c.firstName || "").toLowerCase().includes(q));
+                        renderRows(filtered);
+                    },
+                    error: function () {
+                        renderRows([]);
+                    }
+                });
+                return;
+            }
 
-                    renderRows(filtered);
-                },
-                error: function () {
-                    renderRows([]);
-                }
-            });
+            // =========================
+            // 4) Last Name -> GET /citizens?name= then filter by lastName
+            // =========================
+            if (field === "lastName") {
+                $.ajax({
+                    url: `${API_BASE}/citizens?name=${encodeURIComponent(rawValue)}`,
+                    method: "GET",
+                    success: function (res) {
+                        const list = res.data || [];
+                        const q = rawValue.toLowerCase();
+                        const filtered = list.filter(c => String(c.lastName || "").toLowerCase().includes(q));
+                        renderRows(filtered);
+                    },
+                    error: function () {
+                        renderRows([]);
+                    }
+                });
+                return;
+            }
+
+            // =========================
+            // 5) Date of Birth -> GET /citizens then filter with normalizeDob()
+            // =========================
+            if (field === "dob") {
+                $.ajax({
+                    url: `${API_BASE}/citizens`,
+                    method: "GET",
+                    success: function (res) {
+                        const list = res.data || [];
+                        const q = normalizeDob(rawValue).toLowerCase();
+                        const filtered = list.filter(c => normalizeDob(c.dob || "").toLowerCase().includes(q));
+                        renderRows(filtered);
+                    },
+                    error: function () {
+                        renderRows([]);
+                    }
+                });
+                return;
+            }
+
+            // =========================
+            // 6) Phone -> GET /citizens then filter by phone
+            // =========================
+            if (field === "phone") {
+                $.ajax({
+                    url: `${API_BASE}/citizens`,
+                    method: "GET",
+                    success: function (res) {
+                        const list = res.data || [];
+                        const q = rawValue.toLowerCase();
+                        const filtered = list.filter(c => String(c.phone || "").toLowerCase().includes(q));
+                        renderRows(filtered);
+                    },
+                    error: function () {
+                        renderRows([]);
+                    }
+                });
+                return;
+            }
+
+            // =========================
+            // 7) Occupation -> GET /citizens then filter by occupation
+            // =========================
+            if (field === "occupation") {
+                $.ajax({
+                    url: `${API_BASE}/citizens`,
+                    method: "GET",
+                    success: function (res) {
+                        const list = res.data || [];
+                        const q = rawValue.toLowerCase();
+                        const filtered = list.filter(c => String(c.occupation || "").toLowerCase().includes(q));
+                        renderRows(filtered);
+                    },
+                    error: function () {
+                        renderRows([]);
+                    }
+                });
+                return;
+            }
+
+            // fallback (should not happen)
+            renderRows([]);
         }
 
         document.addEventListener("DOMContentLoaded", function () {
