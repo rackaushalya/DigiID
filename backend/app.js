@@ -257,8 +257,9 @@ app.put("/citizens/:id", async (req, res) => {
     if (!ObjectId.isValid(id)) {
       return res.status(400).json({ ok: false, message: "Invalid MongoDB _id" });
     }
-    
 
+
+    
     const body = req.body || {};
 
     // Accept either frontend naming or backend naming
