@@ -1,0 +1,194 @@
+/* =========================
+   Global / Base
+========================= */
+:root{
+  --gov-blue: #0d6efd;      /* Bootstrap primary */
+  --gov-blue-dark: #0b5ed7;
+  --bg-light: #f8f9fa;
+  --text-muted: #6c757d;
+}
+
+body{
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #ffffff;
+  color: #212529;
+}
+
+/* Links */
+a{ text-decoration: none; }
+
+/* =========================
+   Navbar
+========================= */
+.navbar{
+  letter-spacing: .2px;
+}
+
+.navbar-brand img{
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+}
+
+/* Make nav links look a bit more “official” */
+.navbar .nav-link{
+  opacity: .95;
+}
+.navbar .nav-link:hover{
+  opacity: 1;
+}
+
+/* =========================
+   Hero Section (Watermark-style)
+   (clean method: overlay + background image)
+========================= */
+.hero-section{
+  min-height: 70vh;
+
+  background:
+    linear-gradient(rgba(0, 60, 140, 0.85), rgba(0, 60, 140, 0.85)),
+    url("../images/hero/hero-digital-id.jpg") center/cover no-repeat;
+
+  padding: 80px 0;
+}
+
+/* Right side hero image */
+.hero-section .hero-image{
+  border-radius: 1rem;
+  max-height: 460px;
+  width: 100%;
+  object-fit: cover;
+}
+
+/* =========================
+   Buttons (optional polish)
+========================= */
+.btn{
+  border-radius: .75rem;
+}
+
+.btn-primary{
+  background: var(--gov-blue);
+  border-color: var(--gov-blue);
+}
+.btn-primary:hover{
+  background: var(--gov-blue-dark);
+  border-color: var(--gov-blue-dark);
+}
+
+/* Make light button on hero slightly stronger */
+.hero-section .btn-light{
+  font-weight: 600;
+  border-radius: .75rem;
+}
+
+/* =========================
+   Sections / Headings
+========================= */
+section{
+  position: relative;
+}
+
+h1,h2,h3{
+  letter-spacing: .2px;
+}
+
+/* =========================
+   Cards
+========================= */
+.card{
+  border-radius: 1rem;
+}
+
+.card-title i{
+  margin-right: .4rem;
+}
+
+/* A bit nicer shadow */
+.shadow-sm{
+  box-shadow: 0 6px 18px rgba(0,0,0,.08) !important;
+}
+
+/* =========================
+   Manage Citizens Page
+========================= */
+
+/* Form controls */
+.form-control, .form-select{
+  border-radius: .75rem;
+  padding: .6rem .75rem;
+}
+
+.form-label{
+  font-weight: 600;
+  font-size: .9rem;
+}
+
+/* Message / alert spacing */
+#message{
+  margin-top: 1rem;
+}
+
+/* Search input group */
+.input-group-text{
+  border-radius: .75rem 0 0 .75rem;
+}
+.input-group .form-control{
+  border-radius: 0 .75rem .75rem 0;
+}
+
+/* Table */
+.table{
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+.table thead{
+  background-color: var(--gov-blue);
+  color: #ffffff;
+}
+
+/* nicer row hover */
+.table tbody tr:hover{
+  background: rgba(13,110,253,.06);
+}
+
+/* action buttons */
+.table .btn{
+  border-radius: .6rem;
+}
+
+/* =========================
+   Footer
+========================= */
+footer{
+  margin-top: 0;
+}
+
+footer.bg-primary{
+  background: var(--gov-blue) !important;
+}
+
+/* =========================
+   Responsive
+========================= */
+@media (max-width: 992px){
+  .hero-section{
+    min-height: auto;
+    padding: 60px 0;
+  }
+}
+
+@media (max-width: 768px){
+  .hero-section{
+    text-align: center;
+    padding: 55px 0;
+  }
+  .hero-section .hero-image{
+    max-height: 320px;
+    margin-top: 20px;
+  }
+  .navbar-brand img{
+    height: 34px;
+  }
+}
