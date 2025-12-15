@@ -98,7 +98,9 @@
 
               <div class="mb-2">
                 <label class="form-label">Date of Birth (DD-MM-YYYY)</label>
-                <input class="form-control" id="DoB" placeholder="20-11-2000" required>
+                <input class="form-control" id="DoB" type="text" inputmode="numeric" placeholder="20-11-2000"
+                  pattern="^\d{2}-\d{2}-\d{4}$" title="Enter DOB in DD-MM-YYYY format (e.g., 20-11-2000)" required>
+                <div class="form-text">Format: <b>DD-MM-YYYY</b> (Example: 20-11-2000)</div>
               </div>
 
               <div class="mb-2">
@@ -201,13 +203,23 @@
       setTimeout(() => msg.addClass("d-none"), 2500);
     }
 
+    function normalizeDob(input) {
+      const v = (input || "").trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+        const [y, m, d] = v.split("-");
+        return `${d}-${m}-${y}`;
+      }
+      return v;
+    }
+
+
     function getFormData() {
       return {
         nic: $("#NDI_ID").val().trim(),              // map NDI -> nic in backend
         fullName: ($("#FirstName").val().trim() + " " + $("#LastName").val().trim()).trim(),
         firstName: $("#FirstName").val().trim(),
         lastName: $("#LastName").val().trim(),
-        dob: $("#DoB").val().trim(),
+        dob: normalizeDob($("#DoB").val()),
         email: $("#Email").val().trim(),
         phone: $("#Phone").val().trim(),
         occupation: $("#Occupation").val().trim(),   // optional
@@ -220,9 +232,11 @@
       $("#citizenForm")[0].reset();
       $("#editMode").val("false");
       $("#originalNdi").val("");
+      + $("#mongoId").val("");
       $("#cancelEditBtn").addClass("d-none");
       $("#saveBtn").text("Save Citizen");
     }
+
 
     function renderTable(list) {
       const tbody = $("#citizenTableBody");
@@ -359,6 +373,33 @@
 
       // Auto load table when page opens
       loadCitizens();
+      // ✅ If redirected from search.html, auto-load + enter edit mode
+      const params = new URLSearchParams(window.location.search);
+      const nicFromUrl = (params.get("nic") || "").trim();
+      const editFromUrl = params.get("edit") === "1";
+
+      if (nicFromUrl) {
+        $.ajax({
+          url: `${API_BASE}/citizens/findOne`,
+          method: "POST",
+          contentType: "application/json",
+          data: JSON.stringify({ nic: nicFromUrl }),
+          success: function (res) {
+            if (!res.data) return showMsg("Citizen not found", "warning");
+            // enterEditMode already exists in your file :contentReference[oaicite:6]{index=6}
+            if (editFromUrl) enterEditMode(res.data);
+            else {
+              // even if not edit=1, still load it to the form
+              enterEditMode(res.data);
+            }
+            showMsg("Citizen loaded from Search page", "info");
+          },
+          error: function () {
+            showMsg("Citizen not found", "warning");
+          }
+        });
+      }
+
 
       // Refresh button
       $("#refreshBtn").on("click", function () {
@@ -457,7 +498,7 @@
           }
         });
       });
-      
+
 
       // Cancel edit
       $("#cancelEditBtn").on("click", function () {
